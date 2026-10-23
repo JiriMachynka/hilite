@@ -24,6 +24,7 @@ jobs:
         run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
         working-directory: packages/hilite
       - run: bun install --frozen-lockfile
+      - run: bun run build
       - run: bun run build:package
       - run: bun run test
       - run: npm publish --provenance --access public
