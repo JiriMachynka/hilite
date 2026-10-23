@@ -1,0 +1,57 @@
+---
+layout: ../../layouts/Doc.astro
+---
+
+import Raw from '../../components/Raw.astro'
+import { dl } from '../../lib/html.ts'
+import { optionRows } from '../../lib/options.ts'
+
+Everything most projects need. These work with no setup: the languages and themes are bundled and load when first used.
+
+<Raw
+  html={dl([
+    ['codeToHtml(code, { lang, theme | themes, ...options })', 'HTML string.'],
+    ['codeToRendered(code, options)', 'Returns `{ html, css? }`, for `classMode`.'],
+    ['codeToAnsi(code, { lang, theme })', 'Truecolor terminal output.'],
+    ['codeToTokens(code, lang)', 'Raw tokens for every line.'],
+    ['createHighlighter()', 'A separate highlighter with the same four methods. The functions above share one.'],
+    ['bundledLanguages, bundledThemes', 'The names that are bundled.'],
+    ['BundledLanguage, BundledTheme', 'Types: every accepted language name or alias, and every theme name.'],
+    ['notationDiff, notationHighlight, notationFocus', 'Comment-marker transformers.'],
+    ['lineHighlight, lineDiff, lineFocus', 'Line-number transformers.'],
+    ['Transformer', 'The shape of a transformer: `{ tokens?, line?, pre? }`.'],
+  ])}
+/>
+
+## Options
+
+<Raw html={dl(optionRows)} />
+
+## hilite/core
+
+The engine without the bundled maps, for choosing your own languages.
+
+<Raw
+  html={dl([
+    [
+      'createHighlighterCore({ langs, deps?, aliases?, themes })',
+      'Same methods as `createHighlighter()`, over the maps you pass.',
+    ],
+    ['createLoader({ langs, deps?, aliases? })', 'Loads languages on demand and resolves grammars.'],
+    ['tokenize(grammar, code)', 'Tokens for every line.'],
+    ['createTheme(data)', 'Prepares a theme module.'],
+    ['renderHtml(code, tokens, options)', 'Returns `{ html, css? }`.'],
+    ['renderAnsi(code, tokens, theme)', 'Terminal output.'],
+  ])}
+/>
+
+## Subpaths
+
+<Raw
+  html={dl([
+    ['hilite/langs/<name>', 'A compiled language.'],
+    ['hilite/themes/<name>', 'A compiled theme.'],
+    ['hilite/deps', 'Which languages include which.'],
+    ['hilite/aliases', 'Alternate language names.'],
+  ])}
+/>

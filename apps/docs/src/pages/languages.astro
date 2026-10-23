@@ -1,0 +1,13 @@
+---
+import Doc from '../layouts/Doc.astro'
+import { build } from '../lib/data.ts'
+import { langList } from '../lib/figures.ts'
+---
+
+<Doc>
+  <p>
+    {build.languages.length} languages. Size is each language file after brotli, in KB. A language that includes others
+    (Markdown, Vue, HTML) loads them as well.
+  </p>
+  <ul class="langs" set:html={langList} />
+</Doc>

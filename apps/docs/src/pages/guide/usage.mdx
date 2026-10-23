@@ -1,0 +1,136 @@
+---
+layout: ../../layouts/Doc.astro
+---
+
+import { notationDiff } from '@hilite/render'
+import Raw from '../../components/Raw.astro'
+import { codeTheme, lightTheme } from '../../lib/highlight.ts'
+import { dl } from '../../lib/html.ts'
+import { optionRows } from '../../lib/options.ts'
+import { classOutput, htmlPanel, outPanel, terminal, tokenTable } from '../../lib/outputs.ts'
+
+export const sample = 'const answer = 42\nconsole.log(`The answer is ${answer}`)'
+export const classes = classOutput('typescript', sample)
+
+Every **Output** panel on this page is the real result, rendered when these docs were built. Where an example reads `code`, it holds this:
+
+```typescript title="code"
+const answer = 42
+console.log(`The answer is ${answer}`)
+```
+
+## One call
+
+`codeToHtml` needs no setup. It loads the language and theme on first use and keeps them.
+
+```typescript title="highlight.ts"
+import { codeToHtml, notationDiff } from 'hilite'
+
+const html = await codeToHtml('let a = 1 // [!code ++]', {
+  lang: 'ts',
+  theme: 'github-dark', // or themes: { light: 'github-light', dark: 'github-dark' }
+  transformers: [notationDiff()],
+})
+```
+
+<Raw html={htmlPanel('typescript', 'let a = 1 // [!code ++]', { transformers: [notationDiff()] })} />
+
+`lang` accepts a name or an alias, and an unknown name rejects with `unknown language`. The same goes for themes.
+
+## Names are typed
+
+Languages and themes are string unions, so your editor completes them and a typo is a compile error.
+
+```typescript title="names.ts"
+import { bundledLanguages, bundledThemes, type BundledLanguage, type BundledTheme } from 'hilite'
+
+const lang: BundledLanguage = 'typescript'   // 'typscript' is a type error
+const theme: BundledTheme = 'github-dark'
+console.log(bundledLanguages.length, bundledThemes.length)   // 260 65
+```
+
+Misspell a name and the compiler suggests the right one:
+
+<Raw html={outPanel('tsc', `<pre class="tsc"><code>names.ts(3,7): error TS2820: Type '"typscript"' is not assignable to type 'BundledLanguage'. Did you mean '"typescript"'?</code></pre>`)} />
+
+## Your own highlighter
+
+The top-level functions share one highlighter. `createHighlighter()` gives you a separate one with the same methods.
+
+```typescript title="instance.ts"
+import { createHighlighter } from 'hilite'
+
+// codeToHtml and friends share one of these. Make your own if you want to control its lifetime.
+const highlighter = createHighlighter()
+const html = await highlighter.codeToHtml(code, { lang: 'ts', theme: 'github-dark' })
+```
+
+## Options
+
+`codeToHtml` takes `lang`, `theme` or `themes`, and these:
+
+<Raw html={dl(optionRows)} />
+
+## Class mode
+
+Swap inline styles for classes and a stylesheet, for pages with a strict content security policy.
+
+```typescript title="classes.ts"
+const { html, css } = await codeToRendered(code, {
+  lang: 'ts',
+  theme: 'github-dark',
+  classMode: true,
+})
+// html uses class="t0", class="t1" ...; css holds the matching rules.
+```
+
+<div class="cols outputs">
+  <Raw html={classes.then((c) => outPanel('Output: html', c.markup))} />
+  <Raw html={classes.then((c) => outPanel('Output: css', c.css))} />
+</div>
+
+## Tokens
+
+Raw tokens are scope ids with offsets, with no colors. Turn them into markup with `renderHtml`.
+
+```typescript title="tokens.ts"
+const lines = await codeToTokens('const a = 1', 'ts')
+// lines[0] = [{ start: 0, end: 5, scopeIds }, ...]  one entry per source line
+```
+
+Each token is a range of the line and the scopes the grammar gave it. The theme picks a color from the scopes, which is what you see in the Text column.
+
+<Raw html={tokenTable('typescript', 'const a = 1').then((table) => outPanel('Output', table))} />
+
+## Terminal output
+
+The same tokens render as truecolor escape sequences. The output matches `@shikijs/cli`.
+
+```typescript title="ansi.ts"
+console.log(await codeToAnsi(code, { lang: 'ts', theme: 'github-dark' }))
+```
+
+<Raw html={terminal('typescript', sample, 'bun ansi.ts').then((t) => outPanel('Output', t, 'term-panel'))} />
+
+## Without the wrapper
+
+The tokenizer and the renderer are exported from `hilite/core`. Use them to tokenize once and render several themes.
+
+```typescript title="low-level.ts"
+import { createLoader, createTheme, renderHtml, tokenize } from 'hilite/core'
+import deps from 'hilite/deps'
+import githubDark from 'hilite/themes/github-dark'
+import githubLight from 'hilite/themes/github-light'
+
+const loader = createLoader({ langs: { typescript: () => import('hilite/langs/typescript') }, deps })
+const tokens = tokenize(await loader.grammar('typescript'), code)
+
+// Tokenize once, render as many themes as you like.
+const dark = renderHtml(code, tokens, { theme: createTheme(githubDark) }).html
+const light = renderHtml(code, tokens, { theme: createTheme(githubLight) }).html
+```
+
+<div class="cols outputs">
+  <Raw html={htmlPanel('typescript', sample, { theme: codeTheme }, 'Output: dark')} />
+  <Raw html={htmlPanel('typescript', sample, { theme: lightTheme }, 'Output: light')} />
+</div>

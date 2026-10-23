@@ -1,0 +1,26 @@
+---
+layout: ../../layouts/Doc.astro
+---
+
+import Raw from '../../components/Raw.astro'
+import { capMapPatterns, clipPatterns, failedPatterns, totalPatterns } from '../../lib/data.ts'
+import { compatTable } from '../../lib/figures.ts'
+import { int } from '../../lib/html.ts'
+
+The reference is Shiki with the Oniguruma engine, fed the same grammars from `tm-grammars`. Every check below compares Hilite with it.
+
+## Results
+
+<Raw html={compatTable} />
+
+The scripts live in `apps/bench`. The mutation check breaks the tokenizer and the renderer on purpose and confirms a test goes red.
+
+## Known differences
+
+- {failedPatterns ? <>{failedPatterns} of {int(totalPatterns)} patterns fail to convert.</> : <>All {int(totalPatterns)} patterns convert. One in the <code>ahk2</code> grammar is rewritten first, because oniguruma-to-es reads its <code>\xff</code> as a multibyte sequence; the token checks cover it.</>}
+- {int(capMapPatterns)} patterns need a capture map and {int(clipPatterns)} use `\G` away from the start. They convert, and the token checks cover them.
+- When a marker-only comment is the last line of the snippet, Shiki leaves a stray newline before `</code>`. Hilite does not.
+
+## What is not covered
+
+Everything listed under "What does not exist" in [Migrate from Shiki](migrate.html).

@@ -1,0 +1,14 @@
+---
+import { panel } from '../lib/highlight.ts'
+
+// Fenced code in MDX lands here through `remarkCode`.
+interface Props {
+  lang: string
+  code: string
+  title?: string
+}
+const { lang, code, title = 'terminal' } = Astro.props
+const html = await panel(lang, code, title)
+---
+
+<Fragment set:html={html} />

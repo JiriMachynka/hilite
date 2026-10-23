@@ -1,0 +1,5 @@
+<div *ngIf="visible; else empty">
+  <h1 [title]="heading">{{ heading }}</h1>
+  <button (click)="go()">Go</button>
+</div>
+<ng-template #empty><p>Nothing</p></ng-template>

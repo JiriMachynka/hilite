@@ -1,0 +1,35 @@
+---
+import Doc from '../layouts/Doc.astro'
+import { build } from '../lib/data.ts'
+import { dropdownHtml } from '../lib/figures.ts'
+---
+
+<Doc>
+  <div class="wrap">
+    <p class="lede">
+      This runs the same tokenizer and renderer in your browser. Each language and theme is fetched when you pick it.
+    </p>
+    <div class="play">
+      <div class="controls">
+        <Fragment set:html={dropdownHtml('lang', 'Language', `Search ${build.languages.length} languages`, 'typescript')} />
+        <Fragment set:html={dropdownHtml('theme', 'Theme', `Search ${build.themes.length} themes`, 'github-dark')} />
+        <span class="stat" id="play-stat" role="status"></span>
+      </div>
+      <div class="play-grid">
+        <div class="play-pane">
+          <label for="play-input" class="pane-title">Input</label>
+          <textarea id="play-input" spellcheck="false" aria-label="Code to highlight"></textarea>
+        </div>
+        <div class="play-pane">
+          <h2 class="pane-title" id="play-heading">Output</h2>
+          <div class="out" id="play-out" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+    <noscript><p>The playground needs JavaScript.</p></noscript>
+  </div>
+</Doc>
+
+<script>
+  import '../scripts/playground.ts'
+</script>

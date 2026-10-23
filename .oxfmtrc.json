@@ -1,0 +1,7 @@
+{
+  "semi": false,
+  "singleQuote": true,
+  "printWidth": 120,
+  "ignorePatterns": ["dist", "node_modules", "apps/bench/corpus", "bun.lock", "reports"],
+  "overrides": [{ "files": ["*.mdx"], "options": { "embeddedLanguageFormatting": "off" } }]
+}

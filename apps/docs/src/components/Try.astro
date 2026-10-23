@@ -1,0 +1,46 @@
+---
+import { notationDiff, notationFocus, notationHighlight } from '@hilite/render'
+import { highlight, highlightWith, langIcon } from '../lib/highlight.ts'
+
+// "You write" is editable and "You get" re-renders in the browser. Both are rendered here first, so the page reads fine without JS.
+interface Props {
+  lang: string
+  code: string
+  title: string
+  transformers?: ('diff' | 'highlight' | 'focus')[]
+}
+const { lang, code, title, transformers = [] } = Astro.props
+const make = { diff: notationDiff, highlight: notationHighlight, focus: notationFocus }
+const source = (await highlight(lang, code)).replace(' tabindex="0"', '')
+const result = await highlightWith(
+  lang,
+  code,
+  transformers.map((name) => make[name]()),
+)
+---
+
+<div class="cols try-live" data-editor data-lang={lang} data-transformers={transformers.join(',')}>
+  <div>
+    <h3>You write</h3>
+    <div class="panel editor">
+      <span class="name"><Fragment set:html={langIcon(lang)} />{title}<span class="hint">Editable</span></span>
+      <div class="editor-code">
+        <div class="editor-src" aria-hidden="true" set:html={source} />
+        <textarea spellcheck="false" autocapitalize="off" aria-label={`Edit ${title}; the output updates as you type`}
+          >{code}</textarea
+        >
+      </div>
+    </div>
+  </div>
+  <div>
+    <h3>You get</h3>
+    <div class="panel out">
+      <span class="name">Output</span>
+      <div class="editor-result" set:html={result} />
+    </div>
+  </div>
+</div>
+
+<script>
+  import '../scripts/editor.ts'
+</script>

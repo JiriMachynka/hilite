@@ -1,0 +1,14 @@
+{
+  "name": "@hilite/core",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./format": "./src/format.ts",
+    "./decode": "./src/decode.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "bun test"
+  }
+}

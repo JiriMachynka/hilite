@@ -1,0 +1,466 @@
+---
+import { notationDiff, notationFocus, notationHighlight } from '@hilite/render'
+import source from '../../../../packages/core/src/tokenizer.ts?raw'
+import Code from '../components/Code.astro'
+import Raw from '../components/Raw.astro'
+import Base from '../layouts/Base.astro'
+import { build, html as htmlChecks, langInfo, sizes, themeLabel, tokens, transformers } from '../lib/data.ts'
+import { comparisonNotes, comparisonTable } from '../lib/figures.ts'
+import { demo, dualHighlight, highlight, highlightWith, langIcon } from '../lib/highlight.ts'
+import { int, kb } from '../lib/html.ts'
+import { classOutput, htmlOutput, terminal, tokenTable } from '../lib/outputs.ts'
+import { sampleOf } from '../lib/samples.ts'
+import { samples } from '../scripts/samples.ts'
+
+const description = `A syntax highlighter that runs the grammars and themes VS Code uses on the JavaScript regex engine. ${int(build.languages.length)} languages compiled ahead of time, a ${kb(sizes.core.brotli)} KB tokenizer, no WebAssembly.`
+
+const excerpt = source.slice(source.indexOf('const scanBulk'), source.indexOf('const scannerFor')).trim()
+
+const usage = `import { codeToHtml, notationDiff } from 'hilite'
+
+const html = await codeToHtml('let a = 1 // [!code ++]', {
+  lang: 'ts',
+  theme: 'github-dark', // or themes: { light: 'github-light', dark: 'github-dark' }
+  transformers: [notationDiff()],
+})`
+
+// Every language, set at a size that grows with its compiled weight.
+const weights = build.languages.map((l) => l.brotli)
+const [lightest, heaviest] = [Math.min(...weights), Math.max(...weights)]
+const specimen = build.languages
+  .slice()
+  .sort((a, b) => a.displayName.localeCompare(b.displayName))
+  .map((l) => ({
+    id: l.name,
+    name: l.displayName,
+    kb: kb(l.brotli),
+    bytes: l.brotli,
+    size: `${(0.8 + 1.1 * Math.sqrt((l.brotli - lightest) / (heaviest - lightest))).toFixed(2)}rem`,
+  }))
+
+// One snippet through every output the highlighter has.
+const tourSource = `export const greet = (name: string) => \`Hello, \${name}!\`
+greet('Hilite')`
+const tourHtml = await htmlOutput('typescript', tourSource)
+const tourClasses = await classOutput('typescript', tourSource)
+const outputs = [
+  {
+    id: 'html',
+    label: 'codeToHtml',
+    call: `await codeToHtml(code, { lang: 'ts', theme: 'github-dark' })`,
+    note: 'Inline colors, ready to drop into a page.',
+    body: `${tourHtml.html}<div class="tour-markup">${tourHtml.markup}</div>`,
+  },
+  {
+    id: 'ansi',
+    label: 'codeToAnsi',
+    call: `console.log(await codeToAnsi(code, { lang: 'ts', theme: 'github-dark' }))`,
+    note: 'Truecolor escapes for a terminal, the same as @shikijs/cli.',
+    body: await terminal('typescript', tourSource, 'bun greet.ts'),
+  },
+  {
+    id: 'tokens',
+    label: 'codeToTokens',
+    call: `const lines = await codeToTokens(code, 'ts')`,
+    note: 'Ranges and scopes with no colors, for your own renderer.',
+    body: await tokenTable('typescript', tourSource, 9),
+  },
+  {
+    id: 'classes',
+    label: 'classMode',
+    call: `const { html, css } = await codeToRendered(code, { lang: 'ts', theme: 'github-dark', classMode: true })`,
+    note: 'Class names and a stylesheet, for a strict Content-Security-Policy.',
+    body: `<div class="tour-markup">${tourClasses.markup}</div><div class="tour-markup">${tourClasses.css}</div>`,
+  },
+]
+const outputCalls = await Promise.all(outputs.map((o) => highlight('typescript', o.call)))
+
+const tryLang = 'rust'
+const tryHtml = await highlight(tryLang, sampleOf(tryLang))
+
+const themeSample = `// One render, two themes. The page's CSS decides which one shows, so switching costs nothing.
+export const clamp = (n: number, lo: number, hi: number): number => Math.min(hi, Math.max(lo, n))
+
+const budget = [{ name: 'tokenizer', kb: 4.7 }, { name: 'render', kb: 2.1 }] as const
+export const share = (kb: number, total: number) => \`\${clamp(Math.round((kb / total) * 100), 0, 100)}%\``
+const dualHtml = await dualHighlight('typescript', themeSample)
+const lightThemes = build.themes.filter((t) => t.type === 'light')
+const darkThemes = build.themes.filter((t) => t.type === 'dark')
+
+const markSource = `import { serve } from 'bun'
+
+serve({
+  // [!code focus:2]
+  port: 3000, // [!code --]
+  port: Number(process.env.PORT), // [!code ++]
+  hostname: '0.0.0.0', // [!code highlight]
+  fetch: () => new Response('ok'),
+})`
+// Every on/off combination of the three transformers, rendered here so toggling is instant.
+const markers = [
+  ['diff', 'notationDiff', notationDiff],
+  ['highlight', 'notationHighlight', notationHighlight],
+  ['focus', 'notationFocus', notationFocus],
+] as const
+const markViews = await Promise.all(
+  [0, 1, 2, 3, 4, 5, 6, 7].map(async (bits) => ({
+    key: markers.map((_, i) => (bits >> i) & 1).join(''),
+    html: await highlightWith(
+      'typescript',
+      markSource,
+      markers.filter((_, i) => (bits >> i) & 1).map(([, , make]) => make()),
+    ),
+  })),
+)
+
+// The lazy-loading log weighs each chunk the page fetches against shipping every language and theme.
+const allBytes = [...build.languages, ...build.themes].reduce((sum, item) => sum + item.brotli, 0)
+
+// Typed names: a call with an input where the language string goes.
+const typedCall = (await highlight('typescript', `await codeToHtml(code, { lang: 'LANG', theme: 'github-dark' })`))
+  .replace(' tabindex="0"', '')
+  .replace(
+    'LANG',
+    '<input class="types-input" value="pyhton" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Language name" aria-describedby="types-diag">',
+  )
+const typedNames = build.languages.flatMap((l) => [l.name, ...l.aliases]).sort()
+
+const dropSource = `import { codeToHtml } from 'shiki' // [!code --]
+import { codeToHtml } from 'hilite' // [!code ++]
+
+const html = await codeToHtml(code, {
+  lang: 'ts',
+  themes: { light: 'github-light', dark: 'github-dark' },
+})`
+const proof: [string, string][] = [
+  [`${int(tokens.matched)} of ${int(tokens.tokens)}`, 'tokens identical to Shiki on Oniguruma'],
+  [`${int(htmlChecks.ok)} of ${int(htmlChecks.all)}`, 'HTML outputs byte for byte the same'],
+  [`${int(transformers.notation.ok)} of ${int(transformers.notation.all)}`, 'transformer cases matching @shikijs/transformers'],
+]
+
+const heroLangs = ['typescript', 'python', 'rust', 'go', 'css', 'sql'].map((id) => langInfo.get(id)!)
+const stageThemes = ['github-dark', 'github-light', 'nord', 'dracula']
+const stageSample = samples.typescript!.trimEnd()
+const stageHtml = (await highlight('typescript', stageSample)).replace(' tabindex="0"', '')
+
+const headline: [string, string][] = [
+  [`${Math.floor((tokens.matched / tokens.tokens) * 1e4) / 100}%`, 'of tokens identical to Shiki on Oniguruma'],
+  [`${kb(sizes.fiveLanguages.brotli)} KB`, 'five languages and a theme, tokenizer included'],
+  [`${build.languages.length} + ${build.themes.length}`, 'languages and themes, each its own chunk'],
+]
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareSourceCode',
+  name: 'Hilite',
+  description,
+  url: Astro.site?.href,
+  codeRepository: 'https://github.com/JiriMachynka/hilite',
+  programmingLanguage: 'TypeScript',
+  runtimePlatform: 'JavaScript',
+  license: 'https://opensource.org/licenses/MIT',
+}
+---
+
+<Base title="Hilite: TextMate highlighting without the WebAssembly" description={description}>
+  <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(structuredData)} />
+  <section class="hero-wrap">
+    <div class="hero-bg" aria-hidden="true"><div class="dome"></div></div>
+    <div class="wrap hero split">
+      <div class="hero-copy">
+        <h1>VS Code's grammars on a <mark>{kb(sizes.core.brotli)} KB</mark> tokenizer.</h1>
+        <p class="lede">
+          Hilite highlights code with the TextMate grammars and themes VS Code uses. Every language is compiled to
+          JavaScript ahead of time, so there is no WebAssembly to ship and the browser loads only the languages on the
+          page.
+        </p>
+        <div class="actions">
+          <a class="btn solid" href="guide/index.html">Get started</a><a class="btn line" href="playground.html"
+            >Open the playground</a
+          >
+        </div>
+      </div>
+      <div class="stage" data-stage>
+        <div class="stage-bar">
+          <div class="stage-chips" role="group" aria-label="Language">
+            {
+              heroLangs.map((l, i) => (
+                <button type="button" class="chip" data-lang={l.name} data-kb={kb(l.brotli)} aria-pressed={String(i === 0)}>
+                  {l.displayName}
+                </button>
+              ))
+            }
+          </div>
+          <span class="stage-stat" role="status"></span>
+        </div>
+        <div class="stage-code">
+          <div class="stage-out" aria-hidden="true" set:html={stageHtml} />
+          <textarea class="stage-in" spellcheck="false" aria-label="Edit this code and watch it highlight" rows="9"
+            >{stageSample}</textarea
+          >
+        </div>
+        <div class="stage-bar foot">
+          <div class="stage-chips" role="group" aria-label="Theme">
+            {
+              stageThemes.map((t, i) => (
+                <button type="button" class="chip" data-theme={t} aria-pressed={String(i === 0)}>
+                  {themeLabel(t)}
+                </button>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <div class="wrap">
+    <ul class="headline">
+      {
+        headline.map(([n, t]) => (
+          <li>
+            <strong>{n}</strong>
+            <span>{t}</span>
+          </li>
+        ))
+      }
+    </ul>
+    <div class="fig">
+      <div class="cap">
+        <span class="label">Quick start</span><strong>Three lines</strong>Names in, markup out. Languages and themes load
+        on first use.
+      </div>
+      <div class="body"><Code lang="typescript" code={usage} title="highlight.ts" /></div>
+    </div>
+    <div class="fig">
+      <div class="cap">
+        <span class="label">Outputs</span><strong>One snippet, four results</strong>The same tokens become HTML with
+        inline colors, HTML with classes and a stylesheet, truecolor ANSI, or raw tokens for your own renderer.{' '}
+        <a href="guide/usage.html">Usage</a>
+      </div>
+      <div class="body">
+        <div class="panel tour" data-tour>
+          <div class="name" role="tablist" aria-label="Output">
+            {
+              outputs.map((o, i) => (
+                <button
+                  type="button"
+                  role="tab"
+                  class="chip"
+                  id={`tab-${o.id}`}
+                  aria-controls={`out-${o.id}`}
+                  aria-selected={String(i === 0)}
+                  tabindex={i === 0 ? '0' : '-1'}
+                >
+                  {o.label}
+                </button>
+              ))
+            }
+          </div>
+          {
+            outputs.map((o, i) => (
+              <div class="tour-pane" role="tabpanel" id={`out-${o.id}`} aria-labelledby={`tab-${o.id}`} hidden={i !== 0}>
+                <div class="tour-call">
+                  <Fragment set:html={outputCalls[i]} />
+                  <p>{o.note}</p>
+                </div>
+                <div class="tour-out" set:html={o.body} />
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+    <div class="fig">
+      <div class="cap">
+        <span class="label">Languages</span><strong>{build.languages.length} of them</strong>The grammars VS Code uses,
+        each its own chunk, so a page loads only the ones it shows. Pick a name to load it.{' '}
+        <a href="languages.html">All languages</a>
+      </div>
+      <div class="body try" data-try>
+        <div>
+          <ul class="specimen" id="specimen" aria-label="Every bundled language">
+            {
+              specimen.map((l) => (
+                <li>
+                  <button
+                    type="button"
+                    style={`font-size:${l.size}`}
+                    title={`${l.name}, ${l.kb} KB brotli`}
+                    data-lang={l.id}
+                    data-kb={l.kb}
+                    data-bytes={l.bytes}
+                    aria-pressed={String(l.id === tryLang)}
+                  >
+                    {l.name}
+                  </button>
+                </li>
+              ))
+            }
+          </ul>
+          <div class="specimen-foot">
+            <p class="specimen-note">Set to scale: the bigger the name, the heavier the language file.</p>
+            <button type="button" class="chip specimen-more" aria-controls="specimen" aria-expanded="false">
+              Show all {build.languages.length}
+            </button>
+          </div>
+        </div>
+        <div class="panel try-out">
+          <span class="name"
+            ><span class="try-name">{langInfo.get(tryLang)!.displayName}</span><span
+              class="try-stat"
+              role="status">{kb(langInfo.get(tryLang)!.brotli)} KB</span
+            ></span
+          >
+          <div class="try-code" set:html={tryHtml} />
+        </div>
+      </div>
+    </div>
+    <div class="fig flip-side">
+      <div class="cap">
+        <span class="label">Loading</span><strong>Only what the page uses</strong>Every chunk this page has fetched so
+        far, drawn to scale against shipping all of them. Switch the editor's language or theme, or pick a name above,
+        and watch it grow. <a href="guide/bundles.html">Bundling</a>
+      </div>
+      <div class="body">
+        <div class="panel fetch-log" data-fetch-log data-all={allBytes}>
+          <span class="name"><span>Fetched by this page</span><span class="log-total" role="status"></span></span>
+          <ol class="log">
+            <li data-bytes={sizes.coreAndRender.brotli}>
+              <span class="log-kind">engine</span><span class="log-name">tokenizer and renderer</span><span
+                class="log-kb">{kb(sizes.coreAndRender.brotli)} KB</span
+              >
+            </li>
+          </ol>
+          <div class="log-foot">
+            <span class="log-bar" aria-hidden="true"><span></span></span>
+            <span class="log-ratio"
+              >of {(allBytes / 1024 / 1024).toFixed(1)} MB for all {build.languages.length} languages and{' '}
+              {build.themes.length} themes</span
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="fig">
+      <div class="cap">
+        <span class="label">Themes</span><strong>{build.themes.length} themes, light and dark in one pass</strong>Pass two
+        themes and the colors become CSS variables. Drag the line, or pick another pair. <a href="guide/dual-themes.html"
+          >Dual themes</a
+        >
+      </div>
+      <div class="body">
+        <div class="panel split" data-split>
+          <span class="name">
+            <select class="chip" data-side="light" aria-label="Light theme">
+              {
+                lightThemes.map((t) => (
+                  <option value={t.name} data-bytes={t.brotli} selected={t.name === 'github-light'}>
+                    {t.displayName}
+                  </option>
+                ))
+              }
+            </select>
+            <select class="chip" data-side="dark" aria-label="Dark theme">
+              {
+                darkThemes.map((t) => (
+                  <option value={t.name} data-bytes={t.brotli} selected={t.name === 'github-dark'}>
+                    {t.displayName}
+                  </option>
+                ))
+              }
+            </select>
+          </span>
+          <div class="split-code">
+            <div class="half" set:html={dualHtml} />
+            <div class="half dark" aria-hidden="true" set:html={dualHtml} />
+            <input type="range" class="split-range" min="0" max="100" value="50" aria-label="Divider between light and dark" />
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="fig flip-side">
+      <div class="cap">
+        <span class="label">Lines</span><strong>Diff, highlight and focus</strong>Comments like <code>// [!code ++]</code>
+        mark the lines and disappear. Switch each transformer off to see what you wrote. Terminals get truecolor ANSI.{' '}
+        <a href="guide/transformers.html">Transformers</a>
+      </div>
+      <div class="body">
+        <div class="panel marks" data-marks>
+          <div class="name" role="group" aria-label="Transformers">
+            {
+              markers.map(([id, name]) => (
+                <label class="chip">
+                  <input type="checkbox" value={id} checked />
+                  {name}()
+                </label>
+              ))
+            }
+          </div>
+          <div class="marks-code">
+            {markViews.map((v) => <div class:list={['view', { on: v.key === '111' }]} data-key={v.key} set:html={v.html} />)}
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="fig">
+      <div class="cap">
+        <span class="label">Types</span><strong>Every name is typed</strong>Languages and themes are string unions,
+        aliases included. Your editor completes them, and a typo fails the build with a suggestion. Type a language
+        name. <a href="guide/usage.html#names-are-typed">Typed names</a>
+      </div>
+      <div class="body">
+        <div class="panel types" data-types>
+          <span class="name"><Fragment set:html={langIcon('typescript')} />highlight.ts</span>
+          <div class="types-code" set:html={typedCall} />
+          <div class="types-foot">
+            <p class="types-diag" id="types-diag" role="status"></p>
+            <div class="types-list" role="group" aria-label="Completions"></div>
+          </div>
+          <datalist id="types-names">{typedNames.map((n) => <option value={n} />)}</datalist>
+        </div>
+      </div>
+    </div>
+    <div class="fig full">
+      <div class="cap">
+        <span class="label">Real code</span><strong>The scanner that picks the next match</strong>From Hilite's own
+        tokenizer, with the GitHub Dark theme.
+      </div>
+      <div class="body"><Code lang="typescript" code={excerpt} title="packages/core/src/tokenizer.ts" /></div>
+    </div>
+    <div class="fig">
+      <div class="cap">
+        <span class="label">From Shiki</span><strong>Change one import</strong>The function names and the common options
+        are Shiki's, and so is the HTML, so existing CSS, themes and snapshot tests keep passing.{' '}
+        <a href="guide/migrate.html">Migrate from Shiki</a>
+      </div>
+      <div class="body">
+        <Raw html={demo(dropSource, [notationDiff()], 'highlight.ts')} />
+        <ul class="headline proof">
+          {
+            proof.map(([n, t]) => (
+              <li>
+                <strong>{n}</strong>
+                <span>{t}</span>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+    <section class="compare-block">
+      <h2>Next to the others</h2>
+      <p class="intro">
+        Measured, not quoted. Prism and highlight.js win on size and speed. <a href="comparison.html"
+          >Read the details</a
+        >.
+      </p>
+      <Raw html={comparisonTable} /><p class="note">{comparisonNotes}</p>
+    </section>
+  </div>
+</Base>
+
+<script>
+  import '../scripts/hero.ts'
+  import '../scripts/reveal.ts'
+  import '../scripts/landing.ts'
+</script>

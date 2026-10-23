@@ -1,0 +1,12 @@
+---
+import Doc from '../layouts/Doc.astro'
+import { build } from '../lib/data.ts'
+import { themeItems } from '../lib/figures.ts'
+---
+
+<Doc>
+  <p>
+    {build.themes.length} themes, the same set Shiki bundles. Pass the name to <code>theme</code> or <code>themes</code>.
+  </p>
+  <ul class="themes" set:html={themeItems} />
+</Doc>

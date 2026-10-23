@@ -1,0 +1,8 @@
+def greet = { name -> "Hello, ${name}!" }
+class Sample {
+    String id
+    List<Integer> counts = [1, 2, 3]
+    def total() { counts.sum() ?: 0 }
+}
+println greet('world')
+['a', 'b'].each { println it.toUpperCase() }

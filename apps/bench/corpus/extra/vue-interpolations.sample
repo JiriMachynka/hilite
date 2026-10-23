@@ -1,0 +1,1 @@
+<p>{{ message.split('').reverse().join('') }} and {{ a + b }}</p>

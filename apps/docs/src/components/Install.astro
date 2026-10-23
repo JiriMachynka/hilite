@@ -1,0 +1,51 @@
+---
+import { highlight } from '../lib/highlight.ts'
+import { fileIcon } from '../lib/icons.ts'
+
+// One install command per package manager, in tabs. The script remembers the pick across pages.
+const managers = [
+  ['bun', 'bun add hilite'],
+  ['npm', 'npm install hilite'],
+  ['pnpm', 'pnpm add hilite'],
+  ['yarn', 'yarn add hilite'],
+]
+const panes = await Promise.all(
+  managers.map(async ([pm, command]) => ({
+    pm: pm!,
+    icon: fileIcon(pm!),
+    html: (await highlight('shellscript', command!)).replace(' tabindex="0"', ''),
+  })),
+)
+---
+
+<div class="panel pm" data-pm>
+  <div class="name" role="tablist" aria-label="Package manager">
+    {
+      panes.map((p, i) => (
+        <button
+          type="button"
+          role="tab"
+          class="chip"
+          id={`pm-tab-${p.pm}`}
+          data-pm={p.pm}
+          aria-controls={`pm-${p.pm}`}
+          aria-selected={String(i === 0)}
+          tabindex={i === 0 ? '0' : '-1'}
+        >
+          <Fragment set:html={p.icon} />
+          {p.pm}
+        </button>
+      ))
+    }
+  </div>
+  <button type="button" class="copy" aria-label="Copy code">Copy</button>
+  {
+    panes.map((p, i) => (
+      <div role="tabpanel" id={`pm-${p.pm}`} aria-labelledby={`pm-tab-${p.pm}`} hidden={i !== 0} set:html={p.html} />
+    ))
+  }
+</div>
+
+<script>
+  import '../scripts/pm.ts'
+</script>

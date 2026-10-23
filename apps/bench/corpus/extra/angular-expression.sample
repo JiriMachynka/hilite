@@ -1,0 +1,6 @@
+user.name | uppercase
+items?.length ?? 0
+count > 10 ? 'many' : 'few'
+onSave($event, form.value)
+total | currency: 'USD' : 'symbol'
+a && !b || c

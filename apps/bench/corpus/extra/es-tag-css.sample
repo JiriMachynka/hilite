@@ -1,0 +1,8 @@
+const Button = styled.button`
+  color: ${(p) => p.color};
+  padding: 4px 8px;
+  &:hover { background: #eee }
+`
+const sheet = css`
+  .a { margin: 0 auto }
+`

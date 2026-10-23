@@ -1,0 +1,74 @@
+---
+layout: ../../layouts/Doc.astro
+---
+
+import Scopes from '../../components/Scopes.astro'
+
+export const exploreSource = `import { codeToHtml } from 'hilite'
+
+export const render = async (code: string) => {
+  const html = await codeToHtml(code, {
+    lang: 'ts',
+    theme: 'github-dark',
+  })
+  return \`<div class="code">\${html}</div>\`
+}`
+
+Four pieces turn text into colored markup: a grammar, scopes, a theme and tokens. Hilite uses the same four as VS Code and Shiki, so what you know from either carries over.
+
+## Grammar
+
+A grammar describes a language as regular expressions. Each match gives a piece of text a name, called a scope. Hilite reads the TextMate grammars VS Code ships and converts their regular expressions to JavaScript when the package is built. [How it works](../how-it-works.html) covers that step.
+
+Grammars include each other. Markdown pulls in a grammar for each fenced language, and Vue pulls in HTML, CSS and TypeScript. Hilite loads the included grammars along with the one you asked for.
+
+## Scope
+
+A scope is a dotted name such as `storage.type.ts` or `string.quoted.single.ts`. The parts go from general to specific, so a theme can color every `string` or only `string.quoted.single`.
+
+Scopes nest. A string inside a function call carries the name of the file's language, the call, and the string itself, outermost first. That list is the scope stack.
+
+## Theme
+
+A theme maps scope selectors to colors and font styles. The selector `string` matches every string. `meta.function-call entity.name.function` matches function names only inside a call. When several rules match, the more specific one wins, by the same rules VS Code applies.
+
+## Token
+
+A token is a run of text with one scope stack. `tokenize` returns the tokens of each line. The renderer asks the theme for each token's style, then joins neighbors that look the same into one `span`.
+
+## Explore the tokens
+
+Point at any token to see its scope stack and the color GitHub Dark gives it. Or click the block and move with the arrow keys.
+
+<Scopes lang="typescript" code={exploreSource} title="render.ts" />
+
+## From text to output
+
+<ol class="pipeline">
+  <li>
+    <div class="pipeline-text">
+      <strong>Load</strong>
+      <p>The language name picks a grammar, fetched once.</p>
+    </div>
+  </li>
+  <li>
+    <div class="pipeline-text">
+      <strong>Tokenize</strong>
+      <p>The grammar splits each line into tokens with scope stacks. This is what <code>codeToTokens</code> returns.</p>
+    </div>
+  </li>
+  <li>
+    <div class="pipeline-text">
+      <strong>Style</strong>
+      <p>The theme gives each scope stack a color and a font style.</p>
+    </div>
+  </li>
+  <li>
+    <div class="pipeline-text">
+      <strong>Render</strong>
+      <p>The styled tokens become HTML, or ANSI for a terminal.</p>
+    </div>
+  </li>
+</ol>
+
+[Usage](usage.html) shows each of these outputs with a real result next to the code.

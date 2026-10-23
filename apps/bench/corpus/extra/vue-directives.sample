@@ -1,0 +1,1 @@
+<div v-if="ok" :class="{ a: x }" @click.prevent="go(1)" v-for="(n, i) in list" v-model.trim="text" #default="{ item }"></div>

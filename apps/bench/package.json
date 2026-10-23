@@ -1,0 +1,28 @@
+{
+  "name": "@hilite/bench",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@hilite/compiler": "workspace:*",
+    "@hilite/core": "workspace:*",
+    "@hilite/highlight": "workspace:*",
+    "@hilite/render": "workspace:*",
+    "@shikijs/themes": "^4.5.0",
+    "shiki": "^4.5.0",
+    "tm-grammars": "^1.32.22"
+  },
+  "devDependencies": {
+    "@shikijs/cli": "^4.5.0",
+    "@shikijs/transformers": "4.5.0",
+    "@types/prismjs": "^1.26.6",
+    "@wooorm/starry-night": "^3.11.0",
+    "hast-util-to-html": "^9.0.5",
+    "highlight.js": "^11.12.0",
+    "hilite": "workspace:*",
+    "prismjs": "^1.30.0"
+  }
+}

@@ -1,0 +1,41 @@
+---
+layout: ../layouts/Doc.astro
+---
+
+import Raw from '../components/Raw.astro'
+import { byEngine, compare, sizes } from '../lib/data.ts'
+import { comparisonNotes, comparisonTable, kbText } from '../lib/figures.ts'
+import { ms } from '../lib/html.ts'
+
+How Hilite compares with the libraries you would otherwise reach for. Everything numeric was measured on the same machine with the scripts in `apps/bench`.
+
+<Raw html={comparisonTable} />
+
+<p class="note">{comparisonNotes}</p>
+
+## Where Hilite is ahead
+
+- Against the other TextMate highlighters it is the smallest: {kbText(sizes.fiveLanguages.brotli)} against {kbText(compare.sizes.shikiJs)} for Shiki's JS engine and {kbText(compare.sizes.starry + compare.sizes.starryWasm)} for starry-night with its WebAssembly.
+- Warm, it is the fastest TextMate option: {ms(byEngine.hilite.warm)} against {ms(byEngine.onig.warm)} for Shiki with Oniguruma.
+- Shiki's JavaScript engine takes {ms(byEngine.js.first)} on the first call because it converts grammars at run time. Hilite does that at build time and takes {ms(byEngine.hilite.first)}.
+- Its output is the output of Shiki, so themes, CSS and tests written for Shiki carry over.
+
+## Where it is not
+
+- Prism and highlight.js are smaller and several times faster ({ms(byEngine.prism.warm)} and {ms(byEngine.hljs.warm)} warm). They use hand-written regexes instead of the grammars VS Code uses, so they are less precise on languages with deep nesting. If that precision does not matter to you, they are a fine choice.
+- starry-night's first call is quicker ({ms(byEngine.starry.first)} against {ms(byEngine.hilite.first)}) because its engine is native WebAssembly. It has more grammars, and it outputs a hast tree you can transform.
+- Shiki has a larger ecosystem: hast output, decorations, twoslash, and integrations for most frameworks. Hilite does not.
+
+## Which one to use
+
+- You want the grammars VS Code uses, without WebAssembly and with small bundles: Hilite.
+- You need Shiki's hast tree, decorations or integrations: Shiki.
+- You want the smallest and fastest highlighter and can live with simpler grammars: Prism or highlight.js.
+- You want GitHub's own grammars and CSS themes, and the WebAssembly is acceptable: starry-night.
+
+## Reproduce
+
+```shellscript
+bun apps/bench/src/compare.ts     # sizes and library inventory
+bun apps/bench/src/speed-all.ts   # first run and warm run for every library
+```

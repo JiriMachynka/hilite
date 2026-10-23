@@ -1,0 +1,44 @@
+---
+layout: ../../layouts/Doc.astro
+---
+
+import { byEngine } from '../../lib/data.ts'
+import { ms } from '../../lib/html.ts'
+
+On the 2,000 line benchmark file Hilite takes {ms(byEngine.hilite.first)} on a fresh process and {ms(byEngine.hilite.warm)} on the next call. See [Benchmarks](../benchmarks.html) for the full comparison.
+
+## The first call is the slow one
+
+Language and theme modules load once, and a grammar builds its combined regular expressions the first time a rule set is used. `codeToHtml` and `createHighlighter()` keep all of it, so only the first call per language pays.
+
+## Warm it up
+
+On a server, highlight a small sample of each language you serve at startup so the first request does not.
+
+## Tokenize once
+
+Tokens do not depend on the theme. When you render the same code in several themes, tokenize once and call `renderHtml` per theme, as in the low-level example. Passing `themes` to `codeToHtml` does this for you.
+
+## Ship less
+
+Most of the bytes are languages. See [Bundling languages](bundles.html).
+
+## Untrusted code
+
+Grammars run on regular expressions, and a crafted line can make them slow. `tokenizeTimeLimit` (500 ms by default) caps each line: past it, the rest of the line comes out unstyled. 20,000 open braces in CSS took about 20 seconds without the limit and about one second with it.
+
+The limit has two gaps:
+
+- It covers tokenizing only. 5,000 nested template openers still took about six seconds, almost all of it building markup.
+- It is checked between regex matches, so one catastrophically backtracking match cannot be stopped.
+
+For code you do not control, cap its size, set `tokenizeMaxLineLength` (default 20,000; a few thousand is plenty for real code) so a huge line is skipped, and run it in a worker you can terminate on a deadline.
+
+```typescript title="untrusted.ts"
+const html = await codeToHtml(userCode.slice(0, 50_000), {
+  lang: 'ts',
+  theme: 'github-dark',
+  tokenizeTimeLimit: 200, // ms per line
+  tokenizeMaxLineLength: 5_000, // longer lines come out plain
+})
+```

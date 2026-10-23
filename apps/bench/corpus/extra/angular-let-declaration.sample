@@ -1,0 +1,3 @@
+@let name = user.name;
+@let greeting = 'Hello, ' + name + '!';
+@let total = items.length * price | currency;

@@ -1,0 +1,3 @@
+:host { display: block; padding: 8px }
+.title { color: var(--accent); font-weight: 600 }
+@media (max-width: 600px) { .title { font-size: 14px } }

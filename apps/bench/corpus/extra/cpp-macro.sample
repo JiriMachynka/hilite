@@ -1,0 +1,8 @@
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define STRINGIFY(x) #x
+#define CONCAT(a, b) a##b
+#define LOG(fmt, ...) \
+  printf("[%s:%d] " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#if defined(__linux__) && !defined(NDEBUG)
+#  define DEBUG 1
+#endif

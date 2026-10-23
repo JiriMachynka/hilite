@@ -1,0 +1,67 @@
+---
+layout: ../../layouts/Doc.astro
+---
+
+import Raw from '../../components/Raw.astro'
+import { codeTheme, lightTheme } from '../../lib/highlight.ts'
+import { htmlOutput, outPanel } from '../../lib/outputs.ts'
+
+export const dual = htmlOutput('typescript', 'const answer = 42\nconsole.log(`The answer is ${answer}`)', {
+  themes: { light: lightTheme, dark: codeTheme },
+})
+
+Pass `themes` instead of `theme` and every token carries one CSS variable per theme. The markup is what Shiki writes, so Shiki's CSS recipes work unchanged.
+
+```typescript title="dual.ts"
+await codeToHtml(code, {
+  lang: 'ts',
+  themes: { light: 'github-light', dark: 'github-dark' },
+})
+```
+
+The light colors are written inline and the dark ones wait in `--shiki-dark`. Both panels hold the same markup; the second applies the CSS from the next section.
+
+<div class="cols outputs">
+  <Raw html={dual.then((d) => outPanel('Output: as written', d.html))} />
+  <Raw html={dual.then((d) => outPanel('Output: with the dark CSS', d.html, 'as-dark'))} />
+</div>
+
+<Raw html={dual.then((d) => outPanel('Markup', d.markup))} />
+
+## Switch with the system setting
+
+```css title="highlight.css"
+@media (prefers-color-scheme: dark) {
+  .shiki,
+  .shiki span {
+    color: var(--shiki-dark) !important;
+    background-color: var(--shiki-dark-bg) !important;
+  }
+}
+```
+
+## Switch with a class
+
+```css title="highlight.css"
+html.dark .shiki,
+html.dark .shiki span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+}
+```
+
+## Default color
+
+The first theme is written inline, so the block has color before any CSS loads. `defaultColor` changes that.
+
+```typescript title="default-color.ts"
+// Only variables, no inline color: you pick the theme in CSS.
+await codeToHtml(code, { lang: 'ts', themes, defaultColor: false })
+
+// The browser picks light or dark from the page's color-scheme.
+await codeToHtml(code, { lang: 'ts', themes, defaultColor: 'light-dark()' })
+```
+
+## More than two themes
+
+The keys of `themes` are free. A third theme named `contrast` gets `--shiki-contrast` and `--shiki-contrast-bg`.

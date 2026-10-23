@@ -1,0 +1,11 @@
+<ul class="nav">
+{% for item in items if item.visible %}
+  <li class="{{ 'active' if item.active else '' }}">
+    <a href="{{ url_for('page', slug=item.slug) }}">{{ item.name|upper }}</a>
+  </li>
+{% else %}
+  <li>No items</li>
+{% endfor %}
+</ul>
+{# a comment #}
+{% set total = items|length %}

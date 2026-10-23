@@ -1,0 +1,61 @@
+---
+layout: ../../layouts/Doc.astro
+---
+
+Hilite takes the same grammars and themes and writes the same HTML. The API is smaller and loads lazily, so some calls change shape.
+
+## Before and after
+
+<div class="cols">
+  <div>
+    <h3>Shiki</h3>
+
+```typescript title="before.ts"
+import { createHighlighter } from 'shiki'
+import { transformerNotationDiff } from '@shikijs/transformers'
+
+const shiki = await createHighlighter({ themes: ['github-dark'], langs: ['typescript'] })
+const html = shiki.codeToHtml(code, {
+  lang: 'ts',
+  theme: 'github-dark',
+  transformers: [transformerNotationDiff()],
+})
+```
+
+  </div>
+  <div>
+    <h3>Hilite</h3>
+
+```typescript title="after.ts"
+import { codeToHtml, notationDiff } from 'hilite'
+
+const html = await codeToHtml(code, {
+  lang: 'ts',
+  theme: 'github-dark',
+  transformers: [notationDiff()],
+})
+```
+
+  </div>
+</div>
+
+## What maps over
+
+| Shiki                                                          | Hilite                                                                                                                      |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `createHighlighter({ themes, langs })`                         | Nothing to set up: `codeToHtml` loads languages and themes on first use. `createHighlighter()` gives you your own instance. |
+| `codeToHtml` (sync once loaded)                                | `codeToHtml`, always async.                                                                                                 |
+| `themes: { light, dark }`, `defaultColor`, `cssVariablePrefix` | Same options, same output.                                                                                                  |
+| `transformerNotationDiff`, `Highlight`, `Focus`                | `notationDiff`, `notationHighlight`, `notationFocus`.                                                                       |
+| `transformerMetaHighlight` line ranges                         | `lineHighlight`, `lineDiff`, `lineFocus` take line numbers directly.                                                        |
+| `codeToTokens`                                                 | `codeToTokens(code, lang)` returns scope ids without colors. Style them with `renderHtml`.                                  |
+| `@shikijs/cli` `codeToANSI`                                    | `codeToAnsi`, same output.                                                                                                  |
+| Oniguruma or JavaScript engine option                          | None. Hilite always uses the JavaScript engine.                                                                             |
+
+## What does not exist
+
+- `codeToHast` and hast-based transformer hooks (`span`, `code`, `postprocess`). Hilite transformers get a plain token and line structure instead.
+- Decorations, meta strings, grammar state and `structure: "inline"`.
+- Word highlight and error or warning levels in the notation transformers.
+- Loading a language or theme from raw JSON at runtime. Compile it first with `@hilite/compiler`.
+- Shiki integrations such as twoslash, rehype and markdown-it. You can call `codeToHtml` from your own plugin.

@@ -1,0 +1,7 @@
+export { createTheme } from './theme.ts'
+export type { Theme, ThemeData, ThemeRule } from './theme.ts'
+export { renderHtml } from './html.ts'
+export type { HtmlOptions, Rendered, Transformer, RenderLine, RenderToken } from './html.ts'
+export { renderAnsi } from './ansi.ts'
+export { lineHighlight, lineDiff, lineFocus } from './transformers.ts'
+export { notationDiff, notationHighlight, notationFocus } from './notation.ts'

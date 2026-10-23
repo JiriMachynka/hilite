@@ -1,0 +1,33 @@
+{
+  "name": "hilite-monorepo",
+  "private": true,
+  "license": "MIT",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "bun packages/compiler/src/cli-build.ts",
+    "typecheck": "turbo run typecheck",
+    "lint": "oxlint",
+    "format": "oxfmt",
+    "test": "turbo run test",
+    "budgets": "bun apps/bench/src/budgets.ts",
+    "docs": "bun run --cwd apps/docs build",
+    "docs:dev": "bun run --cwd apps/docs dev",
+    "build:package": "bun packages/hilite/build.ts"
+  },
+  "devDependencies": {
+    "@hilite/compiler": "workspace:*",
+    "@hilite/core": "workspace:*",
+    "@hilite/highlight": "workspace:*",
+    "@hilite/render": "workspace:*",
+    "@types/bun": "1.4.3",
+    "oxfmt": "0.73.0",
+    "oxlint": "1.88.0",
+    "turbo": "2.11.8",
+    "typescript": "7.0.2"
+  },
+  "packageManager": "bun@1.4.1"
+}

@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.1
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run build:package
+      - run: bun run test
+      - run: npm pack --dry-run
+        working-directory: packages/hilite
+
+  # The tests run on Bun, whose regex engine accepts syntax that older V8 rejects. Load every language on each supported Node.
+  node:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: bun install --frozen-lockfile
+      - run: bun run build:package
+      - run: |
+          node --input-type=module -e "
+          const { bundledLanguages, codeToHtml } = await import('./dist/index.js')
+          const failed = []
+          for (const lang of bundledLanguages) {
+            await codeToHtml('a = \"b\" {c} \`d\` \${e}\n<f>g</f>', { lang, theme: 'nord' }).catch((error) => failed.push(lang + ': ' + error.message.slice(-80)))
+          }
+          console.log(process.version, bundledLanguages.length - failed.length, 'of', bundledLanguages.length, 'languages load')
+          if (failed.length) throw new Error(failed.join('\n'))
+          "
+        working-directory: packages/hilite

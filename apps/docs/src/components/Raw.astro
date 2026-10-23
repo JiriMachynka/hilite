@@ -1,0 +1,9 @@
+---
+// Markup built by the helpers in src/lib, dropped in as is.
+interface Props {
+  html: string | Promise<string>
+}
+const html = await Astro.props.html
+---
+
+<Fragment set:html={html} />

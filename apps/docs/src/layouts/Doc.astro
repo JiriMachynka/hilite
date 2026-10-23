@@ -1,0 +1,62 @@
+---
+import type { MarkdownHeading } from 'astro'
+import { pages, pathOf, reading, sectionOf } from '../nav.ts'
+import Base from './Base.astro'
+
+interface Props {
+  /** Passed by MDX pages that use this as their layout. */
+  headings?: MarkdownHeading[]
+}
+
+const path = pathOf(Astro.url.pathname)
+const doc = pages[path]
+if (!doc) throw new Error(`${path} is missing from src/nav.ts`)
+
+const inDocs = doc.layout !== 'plain'
+const at = reading.indexOf(path)
+const link = (p: string) => '../'.repeat(path.split('/').length - 1) + p
+const pagerItem = (p: string | undefined) => (p ? { href: link(p), label: pages[p]?.label ?? pages[p]?.title } : null)
+const prev = inDocs && at > 0 ? pagerItem(reading[at - 1]) : null
+const next = inDocs ? pagerItem(reading[at + 1]) : null
+const outline =
+  inDocs && doc.layout !== 'wide'
+    ? (Astro.props.headings ?? []).filter((h) => h.depth === 2).map((h) => ({ id: h.slug, text: h.text }))
+    : []
+---
+
+<Base title={doc.title === 'Hilite' ? doc.title : `${doc.title} | Hilite`} description={doc.description} outline={outline}>
+  {
+    inDocs ? (
+      <article class="doc">
+        <p class="crumb">{sectionOf(path)}</p>
+        <h1>{doc.title}</h1>
+        <slot />
+        <nav class="pager" aria-label="Pages">
+          {prev ? (
+            <a class="prev" href={prev.href}>
+              <small>Previous</small>
+              {prev.label}
+            </a>
+          ) : (
+            <span />
+          )}
+          {next ? (
+            <a class="next" href={next.href}>
+              <small>Next</small>
+              {next.label}
+            </a>
+          ) : (
+            <span />
+          )}
+        </nav>
+      </article>
+    ) : (
+      <>
+        <div class="wrap page-head">
+          <h1>{doc.title}</h1>
+        </div>
+        <slot />
+      </>
+    )
+  }
+</Base>

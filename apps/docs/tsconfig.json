@@ -1,0 +1,8 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["bun", "astro/client"],
+    "resolveJsonModule": true
+  },
+  "include": ["astro.config.ts", "src/**/*.ts"]
+}

@@ -1,0 +1,46 @@
+---
+layout: ../../layouts/Doc.astro
+---
+
+import Install from '../../components/Install.astro'
+import { build } from '../../lib/data.ts'
+
+Hilite is one package. The languages and themes are already compiled and included, so there is nothing to build in your project and nothing to configure.
+
+## Install
+
+Add it from npm with your package manager:
+
+<Install />
+
+## Use
+
+```typescript title="highlight.ts"
+import { codeToHtml, notationDiff } from 'hilite'
+
+const html = await codeToHtml('let a = 1 // [!code ++]', {
+  lang: 'ts',
+  theme: 'github-dark', // or themes: { light: 'github-light', dark: 'github-dark' }
+  transformers: [notationDiff()],
+})
+```
+
+That is the whole setup. The first call loads the language and theme it needs, and later calls reuse them. [Usage](usage.html) shows the result and covers the rest.
+
+## What is in the package
+
+| Entry                           | What it is                                                                                                                                                 |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hilite`                        | `codeToHtml` and friends, `createHighlighter`, the transformers, and the names of all {build.languages.length} languages and {build.themes.length} themes. |
+| `hilite/core`                   | The same engine without the bundled languages and themes, for when you pick your own. See [Bundling languages](bundles.html).                              |
+| `hilite/langs/<name>`           | One compiled language as an ES module.                                                                                                                     |
+| `hilite/themes/<name>`          | One compiled theme.                                                                                                                                        |
+| `hilite/deps`, `hilite/aliases` | Which languages include which, and the alternate names such as `ts`.                                                                                       |
+
+## Requirements
+
+Node 20 or newer, or Chrome 112, Safari 17 or Firefox 116. Some grammars use the regular expression `v` flag, which older engines reject the first time the language is used. CI loads every language on Node 20, 22 and 24, and Chrome was tested; Safari and Firefox were not.
+
+## Custom builds
+
+To compile your own grammar, or to build a subset, see the [compiler](../api/packages.html#hilite-compiler).

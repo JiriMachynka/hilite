@@ -1,0 +1,31 @@
+---
+import { langIcon } from '../lib/highlight.ts'
+import { scopeExplorer } from '../lib/outputs.ts'
+
+// Every token is its own span with its scope stack, so pointing at one can show what the grammar named it.
+interface Props {
+  lang: string
+  code: string
+  title: string
+}
+const { lang, code, title } = Astro.props
+const html = await scopeExplorer(lang, code)
+---
+
+<div class="explorer" data-explorer>
+  <div class="panel">
+    <span class="name"><Fragment set:html={langIcon(lang)} />{title}</span>
+    <Fragment set:html={html} />
+  </div>
+  <div class="readout" aria-live="polite">
+    <span class="readout-label">Token</span>
+    <p class="readout-text"><span class="readout-swatch"></span><code>Point at a token</code></p>
+    <span class="readout-color"></span>
+    <span class="readout-label">Scope stack, outermost first</span>
+    <ol class="readout-stack"></ol>
+  </div>
+</div>
+
+<script>
+  import '../scripts/scopes.ts'
+</script>

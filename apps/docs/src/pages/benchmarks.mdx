@@ -1,0 +1,51 @@
+---
+layout: ../layouts/Doc.astro
+---
+
+import Raw from '../components/Raw.astro'
+import { build, meanRatio } from '../lib/data.ts'
+import { accuracyTable, gapTable, sizeFigure, speedFigure } from '../lib/figures.ts'
+
+export const dictionary = build.dictionary
+
+Everything here comes from scripts in `apps/bench`. The Shiki sizes are from the same five languages with a minified, brotli-compressed bundle.
+
+## Bundle size
+
+Brotli, in KB. TypeScript, Python, Rust, CSS and JSON with GitHub Dark. Bars share one scale.
+
+<div class="bars">
+  <Raw html={sizeFigure} />
+</div>
+
+## Speed
+
+A 67 KB JavaScript file, GitHub Dark, median of five fresh processes, run with Bun.
+
+<div class="bars">
+  <Raw html={speedFigure} />
+</div>
+
+## Output equality
+
+The reference is Shiki with Oniguruma, fed the same grammars.
+
+<Raw html={accuracyTable} />
+
+## Targets
+
+What was asked for, and what happened, including the misses.
+
+<Raw html={gapTable} />
+
+Languages come out at {meanRatio.toFixed(2)} times the size of Shiki's grammar JSON on average, not half. The regular expressions are most of each file and they do not get smaller when converted{dictionary ? `. With a shared brotli dictionary (${Math.round(dictionary.dictionaryBytes / 1024)} KB, served through HTTP compression dictionaries) the average drops to ${dictionary.heldOut.mean.toFixed(2)} when the dictionary was built from other languages, ${dictionary.inSample.mean.toFixed(2)} when it includes the language itself` : ''}.
+
+## Reproduce
+
+```shellscript
+bun install
+bun packages/compiler/src/cli-build.ts   # writes dist/langs, dist/themes, dist/report.json
+bun apps/bench/src/budgets.ts            # size budgets, exits 1 when one is exceeded
+bun apps/bench/src/diff-tokens.ts        # token match against Shiki + Oniguruma
+bun apps/bench/src/diff-html.ts          # HTML byte comparison
+```

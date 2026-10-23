@@ -1,0 +1,5 @@
+<div class="list" [class.active]="isActive" (click)="toggle($event)">
+  <app-item *ngFor="let item of items; trackBy: trackId" [item]="item"></app-item>
+  <p>{{ title | titlecase }}</p>
+  <input [(ngModel)]="query" #box />
+</div>

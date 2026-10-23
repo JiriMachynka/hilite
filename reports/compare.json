@@ -1,0 +1,24 @@
+{
+  "sizes": {
+    "shikiJs": 81584,
+    "shikiOnig": 216090,
+    "hljs": 16082,
+    "prism": 8624,
+    "starry": 66331,
+    "starryWasm": 106586
+  },
+  "inventory": {
+    "hljsLanguages": 193,
+    "hljsThemes": 82,
+    "prismLanguages": 298,
+    "prismThemes": 8,
+    "starryGrammars": 736,
+    "starryThemes": 14,
+    "versions": {
+      "shiki": "4.5.0",
+      "highlight.js": "11.12.0",
+      "prismjs": "1.30.0",
+      "@wooorm/starry-night": "3.11.0"
+    }
+  }
+}

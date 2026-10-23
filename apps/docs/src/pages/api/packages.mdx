@@ -1,0 +1,158 @@
+---
+layout: ../../layouts/Doc.astro
+---
+
+import Raw from '../../components/Raw.astro'
+import { dl } from '../../lib/html.ts'
+
+The `hilite` package is built from four smaller ones. Most projects never import them directly, but each is usable on its own.
+
+## @hilite/highlight
+
+Names in, markup out. It wraps the loader from `@hilite/core` and the renderer from `@hilite/render`, over maps you pass in.
+
+<Raw
+  html={dl([
+    [
+      'createHighlighter({ langs, deps, aliases, themes })',
+      'Returns the methods below. `langs` and `themes` map a name to an `import()`; `deps` and `aliases` are the generated maps. Languages and themes load on first use.',
+    ],
+    [
+      'codeToHtml(code, { lang, theme | themes, ...options })',
+      'HTML string, byte for byte what Shiki writes. Options are those of `renderHtml`, including `transformers`.',
+    ],
+    ['codeToRendered(code, options)', 'Returns `{ html, css? }`, for `classMode`.'],
+    ['codeToAnsi(code, { lang, theme })', 'Truecolor terminal output.'],
+    ['codeToTokens(code, lang)', 'Raw tokens for every line.'],
+  ])}
+/>
+
+```typescript title="highlighter.ts"
+import { createHighlighter } from '@hilite/highlight'
+import aliases from './dist/aliases.js'
+import deps from './dist/deps.js'
+import langs from './dist/langs/index.js'
+import themes from './dist/themes/index.js'
+
+const hilite = createHighlighter({ langs, deps, aliases, themes })
+const html = await hilite.codeToHtml(code, { lang: 'ts', theme: 'github-dark' })
+```
+
+## @hilite/core
+
+The tokenizer only. It never imports a theme.
+
+<Raw
+  html={dl([
+    [
+      'createLoader({ langs, deps, aliases })',
+      'Returns a loader. `langs` maps a name to an `import()`, `deps` is the generated dependency map.',
+    ],
+    [
+      'loader.grammar(name)',
+      'Loads the language and what it includes, then resolves to a grammar. Rejects for unknown names.',
+    ],
+    [
+      'tokenize(grammar, code)',
+      'Tokens for every line: `{ start, end, scopeIds }`. `scopeIds` are shared arrays, do not mutate them.',
+    ],
+    [
+      'tokenizeLine(grammar, line, state)',
+      'One line at a time with the previous state, for editors that re-tokenize on change.',
+    ],
+    ['scopeName(id)', 'Turns a scope id back into its name, for example `keyword.control.ts`.'],
+    [
+      'decode, createRegistry, addLang, createGrammar',
+      'The pieces `createLoader` is built from, if you manage your own modules.',
+    ],
+  ])}
+/>
+
+## @hilite/render
+
+Themes, HTML and ANSI output, and the transformers. Options are those of [`codeToHtml`](../api/hilite.html#options), except that `theme` and `themes` take the object `createTheme` returns.
+
+<Raw
+  html={dl([
+    ['createTheme(data)', 'Prepares a compiled theme module for use.'],
+    [
+      'renderHtml(code, tokens, options)',
+      'Returns `{ html, css? }`. Options: `theme`, or `themes` for several at once; `defaultColor`, `cssVariablePrefix`, `colorsRendering`, `classMode`, `tabindex`, `transformers`.',
+    ],
+    ['renderAnsi(code, tokens, theme)', 'Truecolor escape sequences, one line per source line.'],
+    [
+      'lineHighlight, lineDiff, lineFocus',
+      'Transformers that add `highlighted`, `diff add`/`diff remove` and `focused` to chosen lines.',
+    ],
+    [
+      'notationDiff, notationHighlight, notationFocus',
+      'The same classes, driven by `// [!code ++]`, `--`, `highlight` (or `hl`) and `focus` comments. Not ported: word highlight, error levels, `{1,3}` meta strings.',
+    ],
+    ['Transformer', '`{ tokens?, line?, pre? }` hooks on the token lists, each line and the outer `pre`.'],
+  ])}
+/>
+
+### Writing a transformer
+
+A transformer is `{ tokens?, line?, pre? }`. `tokens(lines)` edits the token lists before markup, `line(line, number)` runs on each line and may change its classes, `pre(attrs)` edits the attributes of the outer element.
+
+```typescript title="custom.ts"
+const numbered: Transformer = {
+  line: (line, n) => {
+    line.classes.push(n % 2 ? 'odd' : 'even')
+  },
+  pre: (attrs) => {
+    attrs['data-lang'] = 'ts'
+  },
+}
+```
+
+## @hilite/compiler
+
+Build time only. Reads `tm-grammars` and the Shiki theme files and writes one module per language and per theme, a dependency map, aliases and a size and conversion report.
+
+### Command line
+
+<Raw
+  html={dl([
+    ['--out <dir>', 'Where to write. Default is the repo `dist`.'],
+    ['--langs a,b,c', 'Write only these languages.'],
+    ['--dict', 'Also measure a shared brotli dictionary and put the result in the report.'],
+  ])}
+/>
+
+```shellscript
+bun packages/compiler/src/cli-build.ts --langs typescript,python,css --out ./my-dist
+```
+
+### Functions
+
+<Raw
+  html={dl([
+    [
+      'buildLanguages({ out, languages? })',
+      'Compiles languages and writes them with their index, `deps.js` and `aliases.js`.',
+    ],
+    ['buildThemes({ out })', 'Compiles every bundled theme and writes it with its index.'],
+    ['compileTheme(theme)', 'Turns a VS Code or Shiki theme object into the compact form `createTheme` reads.'],
+    ['loadRegistry()', 'Loads the `tm-grammars` sources.'],
+    ['compileLanguage(registry, name)', 'Compiles one language. The module text is on `.text`.'],
+  ])}
+/>
+
+```typescript title="build.ts"
+import { buildLanguages, buildThemes } from '@hilite/compiler'
+
+const { reports } = await buildLanguages({ out: './dist', languages: ['typescript', 'css'] })
+const themes = await buildThemes({ out: './dist' })
+```
+
+### Your own theme
+
+```typescript title="theme.ts"
+import { compileTheme } from '@hilite/compiler'
+import { createTheme } from '@hilite/render'
+
+// Any VS Code or Shiki theme object.
+const theme = createTheme(compileTheme(myTheme))
+```

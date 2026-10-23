@@ -1,0 +1,5 @@
+const tpl = html`
+  <div class="box" id=${id}>
+    <span>${name}</span>
+  </div>
+`

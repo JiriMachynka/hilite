@@ -1,0 +1,47 @@
+---
+layout: ../../layouts/Doc.astro
+---
+
+import { build, sizes } from '../../lib/data.ts'
+import { kb } from '../../lib/html.ts'
+
+Each language is an ES module loaded with a dynamic `import()`, so a bundler gives it its own chunk and the browser fetches it on first use. This site's playground works that way.
+
+## The default
+
+`import { codeToHtml } from 'hilite'` brings the engine plus a map of {build.languages.length} languages and {build.themes.length} themes. A bundler emits a chunk for every language, but a visitor downloads only the ones used.
+
+## Edge runtimes and serverless
+
+Those chunks still count toward upload limits. The default entry bundled with esbuild or Vite came to about 330 files and 6 MB, too much for a small serverless or Workers limit. `hilite/core` with one language and one theme came to 3 files and about 160 KB. Neither build was run on a Workers runtime.
+
+## Pick your languages
+
+If you know the set in advance, use `hilite/core` and name the languages and themes yourself. A bundler leaves everything else out.
+
+```typescript title="highlighter.ts"
+import { createHighlighterCore } from 'hilite/core'
+import deps from 'hilite/deps'
+
+const highlighter = createHighlighterCore({
+  langs: {
+    typescript: () => import('hilite/langs/typescript'),
+    python: () => import('hilite/langs/python'),
+  },
+  themes: { 'github-dark': () => import('hilite/themes/github-dark') },
+  deps,
+})
+const html = await highlighter.codeToHtml(code, { lang: 'python', theme: 'github-dark' })
+```
+
+## What a language costs
+
+Sizes are brotli. The core is {kb(sizes.core.brotli)} KB and core with the renderer is {kb(sizes.coreAndRender.brotli)} KB. Five languages (TypeScript, Python, Rust, CSS, JSON) and GitHub Dark come to {kb(sizes.fiveLanguages.brotli)} KB in one bundle. The [Languages](../languages.html) page lists every language.
+
+## Languages that include others
+
+Markdown, HTML, Vue and others embed other languages. `hilite/deps` records that, and the loader fetches the included languages together with the one you asked for. Pass it to `createHighlighterCore` as shown above.
+
+## Themes
+
+Themes work the same way. A compiled theme is about {kb(build.themes.reduce((s, t) => s + t.brotli, 0) / build.themes.length)} KB brotli on average, so import only the ones you use.

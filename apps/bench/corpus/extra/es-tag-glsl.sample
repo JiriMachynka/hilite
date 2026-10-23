@@ -1,0 +1,7 @@
+const frag = glsl`
+  precision mediump float;
+  uniform vec2 u_res;
+  void main() {
+    gl_FragColor = vec4(gl_FragCoord.xy / u_res, 0.0, 1.0);
+  }
+`

@@ -1,0 +1,57 @@
+---
+import { langInfo } from '../lib/data.ts'
+import { highlight } from '../lib/highlight.ts'
+import { kb } from '../lib/html.ts'
+import { htmlOutput, tokenRows } from '../lib/outputs.ts'
+
+// The four steps, each showing what one real token looks like at that point. Everything is computed here.
+const code = 'const a = 1'
+const [token] = await tokenRows('typescript', code)
+if (!token) throw new Error('no token for the pipeline')
+const span = (await htmlOutput('typescript', code)).html.match(/<span style="[^"]*">const<\/span>/)?.[0]
+if (!span) throw new Error('no rendered span for the pipeline')
+// Split after the opening tag so the narrow box shows the whole span without wrapping inside it.
+const spanHtml = (await highlight('html', span.replace('>const', '>\nconst'))).replace(' tabindex="0"', '')
+const lang = langInfo.get('typescript')!
+---
+
+<p class="pipeline-lead">Follow <code>const</code> from <code>{code}</code> through each step.</p>
+<ol class="pipeline">
+  <li>
+    <div class="pipeline-text">
+      <strong>Load</strong>
+      <p>The language name picks a grammar module, plus any grammars it includes. Each is fetched once.</p>
+    </div>
+    <div class="artifact">
+      <span class="from">lang: 'ts'</span>
+      <span class="to">typescript.js, {kb(lang.brotli)} KB</span>
+    </div>
+  </li>
+  <li>
+    <div class="pipeline-text">
+      <strong>Tokenize</strong>
+      <p>The grammar splits each line into tokens, each with a scope stack. <code>codeToTokens</code> stops here.</p>
+    </div>
+    <div class="artifact">
+      <span class="from">'{token.text}', characters {token.start}–{token.end}</span>
+      {token.scopes.map((scope, i) => <span class:list={['to', 'scope', { inner: i === token.scopes.length - 1 }]}>{scope}</span>)}
+    </div>
+  </li>
+  <li>
+    <div class="pipeline-text">
+      <strong>Style</strong>
+      <p>The theme turns the scope stack into a color and a font style.</p>
+    </div>
+    <div class="artifact">
+      <span class="from">{token.scopes.at(-1)}</span>
+      <span class="to"><span class="swatch" style={`background:${token.color}`}></span>{token.color}, GitHub Dark</span>
+    </div>
+  </li>
+  <li>
+    <div class="pipeline-text">
+      <strong>Render</strong>
+      <p>Styled tokens become HTML with inline colors, HTML with classes and a stylesheet, or ANSI for a terminal.</p>
+    </div>
+    <div class="artifact markup-artifact" set:html={spanHtml} />
+  </li>
+</ol>

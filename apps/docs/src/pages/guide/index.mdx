@@ -1,0 +1,26 @@
+---
+layout: ../../layouts/Doc.astro
+---
+
+import { build, byEngine, html, sizes } from '../../lib/data.ts'
+import { int, kb, ms } from '../../lib/html.ts'
+
+Hilite is a syntax highlighter. It runs the TextMate grammars and themes VS Code uses on the JavaScript regex engine, with every grammar converted to JavaScript ahead of time.
+
+## Why Hilite
+
+- **No WebAssembly.** The tokenizer is {kb(sizes.core.brotli)} KB brotli. Shiki with Oniguruma ships a wasm binary on top of its core.
+- **Only the languages on the page.** Each of the {build.languages.length} languages is its own module, so a bundler gives it its own chunk and the browser fetches it when needed.
+- **Same output.** HTML is byte for byte what Shiki writes in {int(html.ok)} of {int(html.all)} checks across every language. See [Compatibility](compat.html).
+- **Fast after the first call.** A 2,000 line file takes {ms(byEngine.hilite.warm)} warm and {ms(byEngine.hilite.first)} on a fresh process.
+
+## When it is not the right tool
+
+Hilite covers the common path: HTML, ANSI, dual themes, class mode and the comment transformers. It does not expose Shiki's hast tree, decorations, meta strings or grammar state. If you depend on those, stay on Shiki. [Migrating from Shiki](migrate.html) lists what maps over and what does not.
+
+## Next
+
+- [Installation](install.html) adds the package and shows the first call.
+- [Concepts](concepts.html) explains grammars, scopes, themes and tokens, with a block you can inspect.
+- [Usage](usage.html) covers every output the highlighter produces.
+- [Playground](../playground.html) runs the tokenizer in your browser.

@@ -1,0 +1,68 @@
+---
+import Doc from '../layouts/Doc.astro'
+import { failedPatterns, totalPatterns } from '../lib/data.ts'
+import { int } from '../lib/html.ts'
+
+const headings = [
+  { depth: 2, slug: 'at-build-time', text: 'At build time' },
+  { depth: 2, slug: 'at-run-time', text: 'At run time' },
+]
+---
+
+<Doc headings={headings}>
+  <p>The heavy work happens when the package is built. The browser gets one compact file per language and a small scanner.</p>
+
+  <h2 id="at-build-time">At build time</h2>
+  <ol class="pipeline">
+    <li>
+      <div class="pipeline-text">
+        <strong>Resolve</strong>
+        <p>References between grammar rules become rule numbers.</p>
+      </div>
+    </li>
+    <li>
+      <div class="pipeline-text">
+        <strong>Convert</strong>
+        <p>
+          Each regex is rewritten from Oniguruma to JavaScript.{' '}
+          {
+            failedPatterns
+              ? `${int(totalPatterns - failedPatterns)} of ${int(totalPatterns)} convert.`
+              : `All ${int(totalPatterns)} convert.`
+          }
+        </p>
+      </div>
+    </li>
+    <li>
+      <div class="pipeline-text">
+        <strong>Intern</strong>
+        <p>Repeated scope names and regexes are stored once.</p>
+      </div>
+    </li>
+    <li>
+      <div class="pipeline-text">
+        <strong>Encode</strong>
+        <p>The rules are packed into numbers, one ES module per language.</p>
+      </div>
+    </li>
+  </ol>
+
+  <h2 id="at-run-time">At run time</h2>
+  <ol class="pipeline" style="counter-reset: step 4">
+    <li>
+      <div class="pipeline-text">
+        <strong>Scan</strong>
+        <p>
+          A rule's patterns are joined into one regex, so a single search finds the next match. Patterns that need the
+          <code>v</code> or <code>i</code> flag run on their own and tie with it by rule order.
+        </p>
+      </div>
+    </li>
+    <li>
+      <div class="pipeline-text">
+        <strong>Walk</strong>
+        <p>The TextMate loop turns those matches into tokens, line by line.</p>
+      </div>
+    </li>
+  </ol>
+</Doc>

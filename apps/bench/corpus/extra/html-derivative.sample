@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      .card { display: grid; gap: 1rem; color: #333 }
+    </style>
+  </head>
+  <body class="home" onload="init()">
+    <!-- a comment -->
+    <button type="button" disabled data-id="3">Save &amp; close</button>
+    <script>
+      const el = document.querySelector('.card')
+      el.addEventListener('click', () => console.log(`hi ${1 + 1}`))
+    </script>
+  </body>
+</html>

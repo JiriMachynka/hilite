@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Hilite">
+  <defs><clipPath id="tile"><rect width="512" height="512" rx="112"/></clipPath></defs>
+  <rect width="512" height="512" rx="112" fill="#0e1218"/>
+  <g clip-path="url(#tile)">
+    <circle cx="256" cy="440" r="236" fill="#f5683d"/>
+    <circle cx="212" cy="476" r="236" fill="#e8ecf1"/>
+  </g>
+</svg>

@@ -1,0 +1,17 @@
+@if (user.isLoggedIn) {
+  <p>Welcome back, {{ user.name }}</p>
+} @else if (user.pending) {
+  <p>Pending</p>
+} @else {
+  <p>Please sign in</p>
+}
+@for (item of items; track item.id) {
+  <li>{{ item.label }}</li>
+} @empty {
+  <li>None</li>
+}
+@switch (mode) {
+  @case ('a') { <span>A</span> }
+  @default { <span>?</span> }
+}
+@defer (on viewport) { <big-chart /> } @placeholder { <p>...</p> }

@@ -1,0 +1,156 @@
+---
+import '../styles.css'
+import bricolage from '../../node_modules/@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wdth-normal.woff2?url'
+import { groups, pages, pathOf, sectionOf, topNav } from '../nav.ts'
+
+interface Props {
+  title: string
+  description: string
+  outline?: { id: string; text: string }[]
+}
+const { title, description, outline = [] } = Astro.props
+
+const path = pathOf(Astro.url.pathname)
+const doc = pages[path]
+const inDocs = !!doc && doc.layout !== 'plain'
+const wide = doc?.layout === 'wide'
+const section = sectionOf(path)
+// Relative links, as the site always used, so it can live under any subpath.
+const to = (href: string) => '../'.repeat(path.split('/').length - 1) + href
+const canonical = new URL(path === 'index.html' ? '' : path, Astro.site).href
+const image = new URL('og.png', Astro.site).href
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href={to('icon.svg')} type="image/svg+xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Hilite" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={image} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Hilite: VS Code's grammars on a small tokenizer, with no WebAssembly" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <slot name="head" />
+    <link rel="preload" href={bricolage} as="font" type="font/woff2" crossorigin />
+  </head>
+  <body class={inDocs ? 'docs' : ''} data-root={to('')}>
+    <a class="skip" href="#main">Skip to the content</a>
+    <header class="bar">
+      <div class="wrap">
+        <a class="brand" href={to('index.html')}
+          ><img src={to('icon.svg')} alt="" width="28" height="28" /><span>Hilite<b>.</b></span></a
+        >
+        <nav class="links" aria-label="Main">
+          {
+            topNav.map(([label, href]) => (
+              <a href={to(href)} aria-current={label === section ? 'true' : undefined}>
+                {label}
+              </a>
+            ))
+          }
+        </nav>
+        <div class="tools">
+          <button
+            type="button"
+            class="search-open"
+            id="search-open"
+            aria-label="Search the docs"
+            aria-keyshortcuts="Control+K Meta+K">Search<kbd>Ctrl K</kbd></button
+          >
+          {
+            inDocs && (
+              <button type="button" class="menu-open" id="menu-open" aria-controls="sidebar" aria-expanded="false">
+                Menu
+              </button>
+            )
+          }
+        </div>
+      </div>
+    </header>
+    <div class:list={['layout', { 'has-side': inDocs, wide }]}>
+      {
+        inDocs && (
+          <aside class="side" id="sidebar" aria-label="Documentation">
+            <button type="button" class="search-open side-search" aria-label="Search the docs">
+              Search docs<kbd>Ctrl K</kbd>
+            </button>
+            {groups.map((g) => (
+              <details class="group" open>
+                <summary>
+                  {g.title}
+                  <svg class="chevron" viewBox="0 0 16 16" width="12" height="12" aria-hidden="true">
+                    <path
+                      d="m4 6 4 4 4-4"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </summary>
+                <ul>
+                  {g.paths.map((p) => (
+                    <li>
+                      <a href={to(p)} aria-current={p === path ? 'page' : undefined}>
+                        {pages[p]?.label ?? pages[p]?.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            ))}
+          </aside>
+        )
+      }
+      <main id="main">
+        <slot />
+      </main>
+      {
+        outline.length > 1 && (
+          <aside class="outline" aria-label="On this page">
+            <p class="group-title">On this page</p>
+            <ul>
+              {outline.map((o) => (
+                <li>
+                  <a href={`#${o.id}`}>{o.text}</a>
+                </li>
+              ))}
+            </ul>
+          </aside>
+        )
+      }
+    </div>
+    <footer>
+      <div class="wrap">
+        <p>
+          Hilite is MIT licensed. Language icons are from vscode-icons (MIT). Grammars come from the <code
+            >tm-grammars</code
+          > package, themes from <code>@shikijs/themes</code>. Each keeps its own license, listed in the package's <code
+            >THIRD_PARTY_NOTICES.md</code
+          >.
+        </p>
+        <p>Fonts: Bricolage Grotesque, Figtree and JetBrains Mono, under the SIL Open Font License.</p>
+      </div>
+    </footer>
+    <dialog class="search" id="search" aria-label="Search the docs">
+      <form method="dialog">
+        <input id="search-input" type="search" placeholder="Search the docs" autocomplete="off" aria-label="Search" />
+        <ul id="search-results" role="listbox"></ul>
+      </form>
+    </dialog>
+    <script>
+      import '../scripts/site.ts'
+    </script>
+  </body>
+</html>
